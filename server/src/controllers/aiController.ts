@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import OpenAI from "openai";
 import config from "../config/config.js";
 
-const client = new OpenAI({apiKey: config.OPENAI_API_KEY}); // reads OPENAI_API_KEY from env
+const client = new OpenAI({apiKey: config.OPENAI_API_KEY});
 
 const MODEL = config.OPENAI_MODEL || "gpt-4o-mini";
 
@@ -28,7 +28,7 @@ export const getAiResult = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Too many medicines selected (max 20)" });
     }
 
-    // Send only the fields the model needs, to keep the prompt small
+   
     const slim = medicineDetails.map((m: any) => ({
       name: m.medicineName,
       brand: m["brand.brandName"],
