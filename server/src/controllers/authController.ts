@@ -5,8 +5,6 @@ import {pool} from "../config/database.js"
 import { randomUUID } from "node:crypto";
 import config from "../config/config.js";
 
-
-
 interface User{
     username: string;
     email: string;
@@ -91,6 +89,8 @@ export async function login(req: Request, res:Response) : Promise<void>{
             res.status(401).json({
                 message: "WRONG PASSWORD"
             })
+
+            return;
         }
 
         const userId = userRow.rows[0].id;
@@ -141,6 +141,10 @@ export async function login(req: Request, res:Response) : Promise<void>{
 
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.log(errorMessage);
+
+        res.status(500).json({
+            message: "Unexpected server-side failure"
+        })
     }
 }
 
@@ -173,7 +177,7 @@ export async function refresh(req: Request, res:Response): Promise<void>{
 
             await pool.query("update sessions set revoked=true where id=$1", [sessionId]);
             
-            res.clearCookie(refreshToken);
+            res.clearCookie("refreshToken");
 
             res.status(401).json({
                 message: "SESSION EXPIRED"
@@ -229,5 +233,127 @@ export async function refresh(req: Request, res:Response): Promise<void>{
         })
 
         return;
+    }
+}
+
+
+export async function logout(req: Request, res: Response): Promise<void>{
+    const refreshToken = req.cookies.refreshToken;
+
+    if(!refreshToken){
+        res.status(401).json({
+            message: "SESSION EXPIRED"
+        })
+
+        return;
+    }
+
+    try{
+
+        const payload = jwt.verify(refreshToken,config.JWT_SECRET) as refreshTokenPayload;
+
+        const {userId, sessionId} = payload;
+
+        await pool.query("update sessions set revoked=true where id=$1",[sessionId]);
+
+        res.clearCookie("refreshToken");
+
+        res.status(200).json({
+            message: "LOGGED OUT OF THIS DEVICE"
+        })
+
+        return;
+    } catch(error){
+
+        res.clearCookie("refreshToken");
+
+        if(error instanceof jwt.TokenExpiredError){
+            res.status(401).json({
+                message: "SESSION EXPIRED"
+            })
+
+            return;
+        }
+
+        if(error instanceof jwt.JsonWebTokenError){
+            res.status(401).json({
+                message: "INVALID TOKEN"
+            })
+
+            return;
+        }
+
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        console.log(errorMessage);
+
+        res.status(500).json({
+            message: errorMessage
+        })
+
+        return;
+
+    }
+}
+
+
+export async function logoutAll(req: Request, res: Response): Promise<void>{
+    const refreshToken = req.cookies.refreshToken;
+
+    if(!refreshToken){
+        res.status(401).json({
+            message: "SESSION EXPIRED"
+        })
+
+        return;
+    }
+
+    try{
+
+        const payload = jwt.verify(refreshToken,config.JWT_SECRET) as refreshTokenPayload;
+
+        const {userId, sessionId} = payload;
+
+        await pool.query("update sessions set revoked=true where id=$1",[sessionId]);
+
+        await pool.query("update sessions set revoked=true where userId=$1 and revoked=false", [userId]);
+        
+        res.clearCookie("refreshToken");
+
+        res.status(200).json({
+            message: "LOGGED OUT FROM ALL THE DEVICES"
+        })
+
+        return;
+    } catch(error){
+
+        res.clearCookie("refreshToken");
+
+        if(error instanceof jwt.TokenExpiredError){
+            res.status(401).json({
+                message: "SESSION EXPIRED"
+            })
+
+            return;
+        }
+
+        if(error instanceof jwt.JsonWebTokenError){
+            res.status(401).json({
+                message: "INVALID TOKEN"
+            })
+
+            return;
+        }
+
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        console.log(errorMessage);
+
+        res.status(500).json({
+            message: errorMessage
+        })
+
+        return;
+
     }
 }
