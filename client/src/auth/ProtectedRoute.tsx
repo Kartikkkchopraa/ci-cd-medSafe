@@ -35,7 +35,7 @@ export function PublicOnlyRoute() {
 
   if (status === "authenticated") {
     const from = (location.state as { from?: string } | null)?.from
-    return <Navigate to={from || "/dashboard"} replace />
+    return <Navigate to={from || "/search"} replace />
   }
 
   return <Outlet />

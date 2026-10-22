@@ -15,7 +15,7 @@ You will receive details of medicines a user has selected. Write a concise analy
 4. Cautions - key contraindications to be aware of.
 
 Base your answer on the data provided and well-established pharmacology. Use plain language.
-Do not give personal dosing advice. End with one line saying this is informational only and a doctor or pharmacist should be consulted.`;
+Do not give personal dosing advice. Do not add a disclaimer, the app already shows one.`;
 
 export const getAiResult = async (req: Request, res: Response) => {
   try {

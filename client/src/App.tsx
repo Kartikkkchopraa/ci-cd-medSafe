@@ -2,10 +2,9 @@ import { useEffect } from 'react'
 import LandingPage from './pages/LandingPage'
 import Register from './pages/Register'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
 import { ProtectedRoute, PublicOnlyRoute } from './auth/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import SearchAndSelect from './pages/SearchAndSelect'
 import Result from './pages/Result'
 
@@ -31,9 +30,10 @@ const App = () => {
           } />
         </Route>
         <Route element={<ProtectedRoute />}>
-          <Route path='/dashboard' element={
+          <Route path='/search' element={
             <SearchAndSelect/>
           } />
+          <Route path='/dashboard' element={<Navigate to='/search' replace />} />
           <Route path='/results' element={
             <Result/>
           } />
