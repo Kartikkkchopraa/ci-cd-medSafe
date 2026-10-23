@@ -1,5 +1,7 @@
 import axios from "axios"
 import { create } from "zustand"
+import { useMedicineStore } from "./medicineStore";
+import { api } from "../api/client";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated"
 
@@ -20,7 +22,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   status: "loading",
 
   login: async (email, password) => {
-    const res = await axios.post<{ accessToken: string }>(
+    const res = await api.post<{ accessToken: string }>(
       "/api/auth/login",
       { email, password },
       { withCredentials: true },
@@ -30,17 +32,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   logout: async () => {
     try{
-      await axios.post("api/auth/logout",null,{withCredentials: true})
+      await api.post("api/auth/logout",null,{withCredentials: true})
     } finally{
       refreshPromise = null
       set({ accessToken: null, status: "unauthenticated" })
+      
+      useMedicineStore.getState().clearMedicine();
     }
     
   },
 
   refresh: () => {
     if (!refreshPromise) {
-      refreshPromise = axios
+      refreshPromise = api
         .post<{ accessToken: string }>("/api/auth/refresh", null, { withCredentials: true })
         .then((res) => {
           set({ accessToken: res.data.accessToken, status: "authenticated" })

@@ -2,7 +2,7 @@ import axios, { type InternalAxiosRequestConfig } from "axios"
 import { useAuthStore } from "../store/authStore"
 
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_FRONTEND_URL,
   withCredentials: true,
 })
 

@@ -11,6 +11,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",
     "axios": "^1.20.0",
+    "dotenv": "^18.0.9",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.90.0",

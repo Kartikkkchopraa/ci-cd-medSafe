@@ -147,7 +147,7 @@ function Result(){
 
   const aiMutation = useMutation({
     mutationFn: async (medicineDetails: Medicine[]) => {
-      const result = await api.post("/aiResult", {medicineDetails})
+      const result = await api.post("api/aiResult", {medicineDetails})
       const data = result.data
       return typeof data === "string" ? data : data?.result ?? JSON.stringify(data, null, 2)
     },

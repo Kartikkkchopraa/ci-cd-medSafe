@@ -224,7 +224,9 @@ function LandingPage() {
       }
     }
 
-    window.addEventListener('mousemove', handleMouseMove)
+    // A full-viewport moving background is exactly what reduced motion asks us to avoid; leave the still frame
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!reduceMotion) window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseleave', handleMouseLeave)
     video.addEventListener('seeked', handleSeeked)
     video.addEventListener('loadedmetadata', handleLoadedMetadata)
@@ -321,7 +323,7 @@ function LandingPage() {
         {/* Hint for the cursor-driven video, only where there is a cursor */}
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[13px] text-black/60 backdrop-blur-md transition-opacity duration-700 md:flex [@media(pointer:coarse)]:!hidden ${
+          className={`pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[13px] text-black/60 backdrop-blur-md transition-opacity duration-700 md:flex motion-reduce:!hidden [@media(pointer:coarse)]:!hidden ${
             hasScrubbed ? 'opacity-0' : 'opacity-100'
           }`}
         >

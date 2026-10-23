@@ -177,6 +177,17 @@ a {
   .rise-in {
     animation: rise-in 420ms var(--ease-out) both;
   }
+
+  /* Bottom tray: slides up from the edge and back down the same way */
+  .tray {
+    transition:
+      transform 380ms var(--ease-out),
+      opacity 380ms var(--ease-out);
+  }
+  .tray[data-hidden='true'] {
+    transform: translateY(100%);
+    opacity: 0;
+  }
 }
 
 @keyframes shimmer {
@@ -222,6 +233,12 @@ a {
     transition: opacity 300ms ease;
   }
   .btn:not(:disabled):active {
+    transform: none;
+  }
+  .tray {
+    transition: opacity 200ms ease;
+  }
+  .tray[data-hidden='true'] {
     transform: none;
   }
 }

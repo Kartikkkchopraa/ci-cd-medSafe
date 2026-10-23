@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import useDebouncing from '../hooks/useDebounce';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useMedicineStore } from '../store/medicineStore';
@@ -78,12 +78,19 @@ const SearchAndSelect = () => {
     const {medicines, addMedicine, removeMedicine, clearMedicine} = useMedicineStore();
 
     
-    const debouncedSearch = useDebouncing(search, 300);
+    const debouncedSearch = useDebouncing(search, 200);
+
+    // Holds a cleared list so "Clear all" can be undone
+    const [cleared, setCleared] = useState<typeof medicines | null>(null);
+
+    // The mobile tray slides out showing what it last held, not an empty "0 selected"
+    const lastSelected = useRef(medicines);
+    if (medicines.length > 0) lastSelected.current = medicines;
 
 
     const PAGE_SIZE = 25
 
-    const {data, isFetching, isFetchingNextPage, isError, hasNextPage, fetchNextPage} = useInfiniteQuery({
+    const {data, isFetching, isFetchingNextPage, isError, isPlaceholderData, hasNextPage, fetchNextPage} = useInfiniteQuery({
         queryKey : ["search", debouncedSearch],
         initialPageParam: 0,
         queryFn : async({signal, pageParam}) => {
@@ -105,7 +112,9 @@ const SearchAndSelect = () => {
             return next < lastPage.total && next <= lastPage.maxOffset ? next : undefined
         },
 
-        enabled: debouncedSearch.trim().length > 0
+        enabled: debouncedSearch.trim().length > 0,
+        // Keep the last results on screen while the next query loads, so the list never blanks out mid-typing
+        placeholderData: keepPreviousData,
     })
 
     const total = data?.pages[0]?.total ?? 0
@@ -117,8 +126,21 @@ const SearchAndSelect = () => {
   const hasQuery = debouncedSearch.trim().length > 0
   const selectedIds = new Set(medicines.map((m) => m.medicineSctid))
   const isInitialLoad = hasQuery && isFetching && !isFetchingNextPage && results.length === 0
-  const toggle = (item: Medicine) =>
-    selectedIds.has(item.medicineSctid) ? removeMedicine(item.medicineSctid) : addMedicine(item)
+  const toggle = (item: Medicine) => {
+    setCleared(null)
+    if (selectedIds.has(item.medicineSctid)) removeMedicine(item.medicineSctid)
+    else addMedicine(item)
+  }
+
+  const clearAll = () => {
+    setCleared(medicines)
+    clearMedicine()
+  }
+
+  const undoClear = () => {
+    cleared?.forEach(addMedicine)
+    setCleared(null)
+  }
 
   const clearSearch = () => {
     setSearch("")
@@ -199,7 +221,7 @@ const SearchAndSelect = () => {
           )}
 
           {hasQuery && results.length > 0 && (
-            <ul className='mt-2 space-y-3'>
+            <ul className={`mt-2 space-y-3 transition-opacity duration-200 ${isPlaceholderData ? 'opacity-50' : ''}`} aria-busy={isPlaceholderData}>
               {results.map((item, index)=>{
                 const isSelected = selectedIds.has(item.medicineSctid)
                 return (
@@ -232,7 +254,7 @@ const SearchAndSelect = () => {
             </ul>
           )}
 
-          {hasQuery && hasNextPage && (
+          {hasQuery && hasNextPage && !isPlaceholderData && (
             <button
               type='button'
               onClick={() => fetchNextPage()}
@@ -261,13 +283,22 @@ const SearchAndSelect = () => {
                 <span className='ml-2 rounded-full bg-white/10 px-2 py-0.5 align-middle text-[12px] text-white/70'>{medicines.length}</span>
               </h2>
               {medicines.length > 0 && (
-                <button type='button' onClick={()=> clearMedicine()} className='btn btn-ghost px-3 py-1 text-[13px]'>
+                <button type='button' onClick={clearAll} className='btn btn-ghost px-3 py-1 text-[13px]'>
                   Clear all
                 </button>
               )}
             </div>
 
-            {medicines.length === 0 ? (
+            {medicines.length === 0 && cleared?.length ? (
+              <div role='status' className='rise-in mt-5 flex items-center justify-between gap-3 rounded-2xl bg-white/[0.05] py-3 pl-4 pr-2'>
+                <p className='text-[14px] text-white/60'>
+                  Cleared {cleared.length} medicine{cleared.length > 1 ? 's' : ''}
+                </p>
+                <button type='button' onClick={undoClear} className='btn btn-secondary btn-sm'>
+                  Undo
+                </button>
+              </div>
+            ) : medicines.length === 0 ? (
               <div className='mt-5 flex flex-col items-center rounded-2xl border border-dashed border-white/15 px-4 py-8 text-center'>
                 <span className='text-white/30'><PillIcon size={28} /></span>
                 <p className='mt-3 text-[14px] text-white/45'>Medicines you add will appear here.</p>
@@ -307,19 +338,22 @@ const SearchAndSelect = () => {
       </div>
 
       {/* Mobile: translucent tray pinned to the bottom */}
-      {medicines.length > 0 && (
-        <div className='material rise-in fixed inset-x-0 bottom-0 z-20 border-t border-white/10 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 lg:hidden'>
-          <div className='mx-auto flex max-w-6xl items-center justify-between gap-4'>
-            <div className='min-w-0'>
-              <p className='text-[14px] text-white'>{medicines.length} selected</p>
-              <p className='truncate text-[12px] text-white/50'>{medicines.map((m) => m.medicineName).join(', ')}</p>
-            </div>
-            <Link to='/results' className='btn btn-primary btn-md shrink-0'>
-              Check <ArrowRightIcon size={16} />
-            </Link>
+      {/* Stays mounted so it leaves along the same path it arrived on */}
+      <div
+        data-hidden={medicines.length === 0}
+        inert={medicines.length === 0}
+        className='tray material fixed inset-x-0 bottom-0 z-20 border-t border-white/10 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 lg:hidden'
+      >
+        <div className='mx-auto flex max-w-6xl items-center justify-between gap-4'>
+          <div className='min-w-0'>
+            <p className='text-[14px] text-white'>{lastSelected.current.length} selected</p>
+            <p className='truncate text-[12px] text-white/50'>{lastSelected.current.map((m) => m.medicineName).join(', ')}</p>
           </div>
+          <Link to='/results' className='btn btn-primary btn-md shrink-0'>
+            Check <ArrowRightIcon size={16} />
+          </Link>
         </div>
-      )}
+      </div>
     </div>
   )
 }

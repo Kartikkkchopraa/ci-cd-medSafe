@@ -45,18 +45,18 @@ const Login = () => {
 
     } catch (error) {
       if (!axios.isAxiosError(error) || !error.response) {
-        setServerError("could not reach the server, please try again")
+        setServerError("Could not reach the server, please try again")
         return
       }
 
       const { status, data} = error.response
 
       if (status === 401 || status === 404) {
-        setServerError("incorrect email or password")
+        setServerError("Incorrect email or password")
         return
       }
 
-      setServerError(data?.message || "something went wrong, please try again")
+      setServerError(data?.message || "Something went wrong, please try again")
     }
   }
 
@@ -81,7 +81,7 @@ const Login = () => {
 
           {justRegistered && (
             <p role="status" className="callout callout-success mb-6">
-              account created, log in to continue
+              Account created. Log in to continue.
             </p>
           )}
 
@@ -98,10 +98,10 @@ const Login = () => {
                 aria-invalid={!!errors.email}
                 className="field"
                 {...register("email",{
-                  required: "email is required",
+                  required: "Email is required",
                   pattern:{
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "enter a valid email address"
+                    message: "Enter a valid email address"
                   }
                 })}
               />
@@ -122,7 +122,7 @@ const Login = () => {
                 aria-invalid={!!errors.password}
                 className="field"
                 {...register("password",{
-                  required: "password is required"
+                  required: "Password is required"
                 })}
               />
               {errors.password && (

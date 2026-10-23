@@ -6,11 +6,5 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    server: {
-      proxy: {
-        // Forward API calls to the backend so the browser sees one origin (no CORS needed)
-        '/api': env.API_PROXY_TARGET || 'http://localhost:3000',
-      },
-    },
   }
 })

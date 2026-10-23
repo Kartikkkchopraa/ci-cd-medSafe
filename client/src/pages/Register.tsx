@@ -4,6 +4,7 @@ import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import SiteNav from "../components/SiteNav"
 import { ArrowRightIcon, Spinner } from "../components/icons"
+import { api } from "../api/client"
 
 interface RegisterFormData{
   username: string;
@@ -31,7 +32,7 @@ const Register = () => {
     setServerError("")
 
     try {
-      await axios.post("/api/auth/register", {
+      await api.post("/api/auth/register", {
         username: data.username,
         email: data.email,
         password: data.password,
@@ -42,7 +43,7 @@ const Register = () => {
     } catch (error) {
 
       if (!axios.isAxiosError(error) || !error.response) {
-        setServerError("could not reach the server, please try again")
+        setServerError("Could not reach the server, please try again")
         return
       }
 
@@ -50,16 +51,16 @@ const Register = () => {
 
       if (status === 409) {
         if (data?.message === "USER ALREADY EXISTS") {
-          setError("email", { type: "server", message: "an account with this email already exists" }, { shouldFocus: true })
+          setError("email", { type: "server", message: "An account with this email already exists" }, { shouldFocus: true })
           return
         }
         if (data?.message === "Username already exists") {
-          setError("username", { type: "server", message: "this username is already taken" }, { shouldFocus: true })
+          setError("username", { type: "server", message: "This username is already taken" }, { shouldFocus: true })
           return
         }
       }
 
-      setServerError(data?.message || "something went wrong, please try again")
+      setServerError(data?.message || "Something went wrong, please try again")
     }
   }
 
@@ -95,18 +96,18 @@ const Register = () => {
                 aria-invalid={!!errors.username}
                 className="field"
                 {...register("username",{
-                  required: "username is required",
+                  required: "Username is required",
                   minLength:{
                     value: 3,
-                    message: "username must be at least 3 characters"
+                    message: "Username must be at least 3 characters"
                   },
                   maxLength:{
                     value: 20,
-                    message: "username must be at most 20 characters"
+                    message: "Username must be at most 20 characters"
                   },
                   pattern:{
                     value: /^[a-zA-Z0-9_]+$/,
-                    message: "only letters, numbers and underscores are allowed"
+                    message: "Only letters, numbers and underscores are allowed"
                   }
                 })}
               />
@@ -127,10 +128,10 @@ const Register = () => {
                 aria-invalid={!!errors.email}
                 className="field"
                 {...register("email",{
-                  required: "email is required",
+                  required: "Email is required",
                   pattern:{
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "enter a valid email address"
+                    message: "Enter a valid email address"
                   }
                 })}
               />
@@ -151,14 +152,14 @@ const Register = () => {
                 aria-invalid={!!errors.password}
                 className="field"
                 {...register("password",{
-                  required: "password is required",
+                  required: "Password is required",
                   minLength:{
                     value: 8,
-                    message: "password must be at least 8 characters"
+                    message: "Password must be at least 8 characters"
                   },
                   pattern:{
                     value: /^(?=.*[A-Za-z])(?=.*\d).+$/,
-                    message: "password must contain at least one letter and one number"
+                    message: "Password must contain at least one letter and one number"
                   }
                 })}
               />
@@ -179,9 +180,9 @@ const Register = () => {
                 aria-invalid={!!errors.confirmPassword}
                 className="field"
                 {...register("confirmPassword",{
-                  required: "please confirm your password",
+                  required: "Please confirm your password",
                   validate: (value) =>
-                    value === getValues("password") || "passwords do not match"
+                    value === getValues("password") || "Passwords do not match"
                 })}
               />
               {errors.confirmPassword && (
