@@ -1,0 +1,97 @@
+name: frontend
+
+on:
+    push:
+      branches:
+        - main
+    workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+    build-test:
+        runs-on: ubuntu-24.04-arm
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+            
+            - name: Setup Node.js
+              uses: actions/setup-node@v7
+              with:
+                node-version: '25'
+
+            - name: Install Dependencies
+              working-directory: client
+              run: npm ci
+
+            - name: Run Tests (If any)
+              working-directory: client
+              run: npm test --if-present
+
+            - name: Build Frontend
+              working-directory: client
+              run: npm run build
+
+    docker-build-push:
+        needs: build-test
+        runs-on: ubuntu-24.04-arm
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+            
+            - name: Login to Docker Hub
+              uses: docker/login-action@v4
+              with:
+                username: ${{ secrets.DOCKER_USERNAME }}
+                password: ${{ secrets.DOCKER_PASSWORD }}
+
+            - name: Build and Push the Docker Image
+              uses: docker/build-push-action@v7
+              with:
+                context: client
+                push: true
+                tags: |
+                        ${{secrets.DOCKER_USERNAME}}/medsfrontend:latest
+
+    deploy:
+      needs: docker-build-push
+      runs-on: ubuntu-24.04-arm
+
+
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v7
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v6
+
+          with:
+            role-to-assume: ${{secrets.ARN}} #change to reflect your IAM role’s ARN
+            role-session-name: GitHub_to_AWS_via_FederatedOIDC
+            aws-region: ${{ secrets.AWS_REGION}}
+        # Hello from AWS: WhoAmI
+        - name: Sts GetCallerIdentity
+          run: |
+            aws sts get-caller-identity
+
+        - name: Setup kubectl
+          uses: azure/setup-kubectl@v4
+          with:
+            version: 'latest'
+
+        - name: update the kubeconfig for eks
+          run: |
+            aws eks update-kubeconfig --name ${{secrets.CLUSTER_NAME}} --region ap-south-1
+
+        - name: verify connection
+          run: kubectl get nodes
+
+        - name: Deploy to aws
+          run: |
+            kubectl apply -f client/app.yaml
+            kubectl apply -f ingress.yaml
+            kubectl rollout restart deployment/frontend
+            kubectl rollout status deployment/frontend --timeout=120s

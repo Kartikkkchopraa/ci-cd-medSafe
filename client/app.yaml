@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: kartikchopra254/medsfrontend:v2
+        image: kartikchopra254/medsfrontend:latest
         ports:
         - containerPort: 80
 
