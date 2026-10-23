@@ -20,7 +20,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config as RetryableConfig | undefined
-    const isAuthCall = original?.url?.startsWith("/auth/")
+    // Auth routes live under /api/auth/ — never try to refresh on their 401s, or a failed refresh waits on itself
+    const isAuthCall = original?.url?.includes("/auth/")
 
     if (error.response?.status !== 401 || !original || original._retry || isAuthCall) {
       return Promise.reject(error)

@@ -1,0 +1,48 @@
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Testing and coverage
+coverage
+.nyc_output
+test-results
+
+# Build output (for TypeScript projects)
+dist
+build
+*.tsbuildinfo
+
+# Caches
+.cache
+.turbo
+
+# Editor and OS files
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+README.md

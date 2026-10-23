@@ -44,8 +44,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   refresh: () => {
     if (!refreshPromise) {
-      refreshPromise = api
-        .post<{ accessToken: string }>("/api/auth/refresh", null, { withCredentials: true })
+      refreshPromise = api.post<{ accessToken: string }>("/api/auth/refresh", null, { withCredentials: true })
         .then((res) => {
           set({ accessToken: res.data.accessToken, status: "authenticated" })
           return res.data.accessToken

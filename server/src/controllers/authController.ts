@@ -158,7 +158,7 @@ export async function refresh(req: Request, res:Response): Promise<void>{
 
     if(!refreshToken){
         res.status(401).json({
-            message: "SESSION EXPIRED"
+            message: "SESSION_EXPIRED"
         })
 
         return;
@@ -180,9 +180,9 @@ export async function refresh(req: Request, res:Response): Promise<void>{
             res.clearCookie("refreshToken");
 
             res.status(401).json({
-                message: "SESSION EXPIRED"
+                message: "SESSIONEXPIRED"
             })
-
+            console.log("session exp");
             return;
         }
 
@@ -211,6 +211,7 @@ export async function refresh(req: Request, res:Response): Promise<void>{
                 message: "TOKEN EXPIRED"
             })
 
+
             return;
         }
 
@@ -218,6 +219,8 @@ export async function refresh(req: Request, res:Response): Promise<void>{
             res.status(401).json({
                 message: "INVALID REFRESH TOKEN"
             })
+
+
 
             return;
         }
@@ -231,6 +234,9 @@ export async function refresh(req: Request, res:Response): Promise<void>{
         res.status(500).json({
             message: errorMessage
         })
+
+
+        console.log(errorMessage)
 
         return;
     }

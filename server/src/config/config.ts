@@ -11,6 +11,9 @@ if(!process.env.FRONTEND_URL){
 if(!process.env.DATABASE_URL){
     throw new Error("Database Url undefined");
 }
+if(!process.env.DATABASE_URL_AWS){
+    throw new Error("Database Url undefined");
+}
 if(!process.env.JWT_SECRET){
     throw new Error("Jwt secret undefined");
 }
@@ -27,7 +30,8 @@ const config = {
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    OPENAI_MODEL: process.env.OPENAI_MODEL
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
+    DATABASE_URL_AWS: process.env.DATABASE_URL_AWS
 };
 
 
