@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: kartikchopra254/medsbackend:v1
+          image: kartikchopra254/medsbackend:latest
           ports:
             - containerPort: 3000
           envFrom:

@@ -1,0 +1,120 @@
+name: backend
+
+on:
+    push:
+      branches:
+        - main
+      paths:
+        - 'server/**'
+        - '.github/workflows/backend.yml'
+    workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+    build-test:
+        runs-on: ubuntu-24.04-arm
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v7
+              with:
+                node-version: '25'
+
+            - name: Install Dependencies
+              working-directory: server
+              run: npm ci
+
+            - name: Run Tests (If any)
+              working-directory: server
+              run: npm test --if-present
+
+            - name: Build (type-check)
+              working-directory: server
+              run: npm run build
+
+    docker-build-push:
+        needs: build-test
+        runs-on: ubuntu-24.04-arm
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+
+            - name: Login to Docker Hub
+              uses: docker/login-action@v4
+              with:
+                username: ${{ secrets.DOCKER_USERNAME }}
+                password: ${{ secrets.DOCKER_PASSWORD }}
+
+            - name: Build and Push the Docker Image
+              uses: docker/build-push-action@v7
+              with:
+                context: server
+                push: true
+                tags: |
+                        ${{ secrets.DOCKER_USERNAME }}/medsbackend:latest
+
+    deploy:
+      needs: docker-build-push
+      runs-on: ubuntu-24.04-arm
+
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v7
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v6
+          with:
+            role-to-assume: ${{ secrets.ARN }}
+            role-session-name: GitHub_to_AWS_via_FederatedOIDC
+            aws-region: ${{ secrets.AWS_REGION }}
+
+        - name: Sts GetCallerIdentity
+          run: aws sts get-caller-identity
+
+        - name: Setup kubectl
+          uses: azure/setup-kubectl@v4
+
+        - name: Update kubeconfig for EKS
+          run: aws eks update-kubeconfig --name ${{ secrets.CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+
+        - name: Verify connection
+          run: kubectl get nodes
+
+        # Secrets reach the shell as env vars (not pasted into the script), get written to a
+        # temporary env file, and become the backend-secret the pod reads via envFrom
+        - name: Create env file and update backend secret
+          env:
+            PORT: ${{ secrets.PORT }}
+            FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+            DATABASE_URL: ${{ secrets.DATABASE_URL }}
+            DATABASE_URL_AWS: ${{ secrets.DATABASE_URL_AWS }}
+            JWT_SECRET: ${{ secrets.JWT_SECRET }}
+            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+            OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+          run: |
+            cat > backend.env <<EOF
+            PORT=$PORT
+            FRONTEND_URL=$FRONTEND_URL
+            DATABASE_URL=$DATABASE_URL
+            DATABASE_URL_AWS=$DATABASE_URL_AWS
+            JWT_SECRET=$JWT_SECRET
+            OPENAI_API_KEY=$OPENAI_API_KEY
+            OPENAI_MODEL=$OPENAI_MODEL
+            EOF
+            # create on first run, update on later runs
+            kubectl create secret generic backend-secret --from-env-file=backend.env \
+              --dry-run=client -o yaml | kubectl apply -f -
+            rm -f backend.env
+
+        # Restart so the pod pulls the new :latest image and re-reads the secret
+        - name: Deploy backend
+          run: |
+            kubectl apply -f server/app.yaml
+            kubectl rollout restart deployment/backend
+            kubectl rollout status deployment/backend --timeout=180s

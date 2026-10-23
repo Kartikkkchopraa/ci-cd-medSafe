@@ -4,6 +4,10 @@ on:
     push:
       branches:
         - main
+      paths:
+        - 'client/**'
+        - 'ingress.yaml'
+        - '.github/workflows/frontend.yml'
     workflow_dispatch:
 
 permissions:
